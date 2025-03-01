@@ -56,7 +56,7 @@ class Card:
 #  \ 肚皮+ \
 class CardDuPi(Card):
     def __init__(self):
-        super().__init__("肚皮+", CardType.ATTACK, cost=0)
+        super().__init__("肚皮+(0)", CardType.ATTACK, cost=0)
 
     def effect(self, user):
         damage = user.armor
@@ -67,7 +67,7 @@ class CardDuPi(Card):
 #  \ 剑柄+ \
 class CardJianBing(Card):
     def __init__(self):
-        super().__init__("剑柄+", CardType.ATTACK, cost=1)
+        super().__init__("剑柄+(1)", CardType.ATTACK, cost=1)
 
     def effect(self, user):
         damage = 10
@@ -85,7 +85,7 @@ class CardJianBing(Card):
 # \  契约+ \
 class CardQiYue(Card):
     def __init__(self):
-        super().__init__("契约+", CardType.SKILL, cost=1)
+        super().__init__("契约+(1)", CardType.SKILL, cost=1)
 
     def effect(self, user):
         for _ in range(3):
@@ -99,7 +99,7 @@ class CardQiYue(Card):
 # \ 狂怒+ \
 class CardKuangNu(Card):
     def __init__(self):
-        super().__init__("狂怒+", CardType.SKILL, cost=0)
+        super().__init__("狂怒+(0)", CardType.SKILL, cost=0)
 
     def effect(self, user):
         user.buff += 5
