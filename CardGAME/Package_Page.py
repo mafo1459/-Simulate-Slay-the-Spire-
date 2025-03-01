@@ -35,71 +35,96 @@ class PageA(QWidget):
     def initUI(self):
         layout = QVBoxLayout()
 
-        # 能量输入
-        self.energy_input = QLineEdit(self)
-        energy_layout = QHBoxLayout()
-        energy_layout.addWidget(QLabel("Energy(费用):"))
-        energy_layout.addWidget(self.energy_input)
+        layout.addWidget(QLabel("模拟次数:"))
+        self.attempts_entry = QLineEdit(self)
+        layout.addWidget(self.attempts_entry)
 
-        # 模拟次数输入
-        self.attempts_input = QLineEdit(self)
-        attempts_layout = QHBoxLayout()
-        attempts_layout.addWidget(QLabel("Attempts(模拟次数):"))
-        attempts_layout.addWidget(self.attempts_input)
+        layout.addWidget(QLabel("初始能量:"))
+        self.energy_entry = QLineEdit(self)
+        layout.addWidget(self.energy_entry)
 
-        # 运行按钮
         self.run_button = QPushButton("Run Simulate", self)
         self.run_button.clicked.connect(self.runSimulate)
-
-        # 添加到布局
-        layout.addLayout(energy_layout)
-        layout.addLayout(attempts_layout)
-        layout.addWidget(self.text)
         layout.addWidget(self.run_button)
+
+        layout.addWidget(self.text)
 
         self.setLayout(layout)
 
     def runSimulate(self):
         try:
-            energy = int(self.energy_input.text())
-            attempts = int(self.attempts_input.text())
+            attempts = int(self.attempts_entry.text())
+            energy = int(self.energy_entry.text())
             self.text.clear()
 
+            # 存储每次模拟的结果
+            simulation_results = []
+
             for _ in range(attempts):
+                # 初始化用户
+                user = PC.User(energy=energy)
+                cards = [
+                    PC.CardDuPi(),
+                    PC.CardJianBing(),
+                    PC.CardQiYue(),
+                    PC.CardKuangNu(),
+                ]
+                user.draw_pile = cards.copy()
+                random.shuffle(user.draw_pile)
                 self.text.append("---------------------------------------------------")
-                self.simulate(energy)
+                self.text.append("---------------------------------------------------")
+                # 初始抽牌
+                for _ in range(4):
+                    if user.draw_pile:
+                        card = user.draw_pile.pop()
+                        card.status = PC.CardStatus.IN_HAND
+                        user.hand.append(card)
+
+                # 记录本次模拟的出牌过程
+                simulation_log = []
+
+                # 模拟出牌
+                while user.energy > 0 or user.has_dupi():
+                    if not user.hand:
+                        break
+
+                    hand_names = [card.name for card in user.hand]
+                    discard_names = [card.name for card in user.discard_pile]
+                    self.text.append(
+                        f"手牌中：{hand_names} ,    弃牌中：{discard_names}"
+                    )
+
+                    card = random.choice(user.hand)
+                    try:
+                        card.play(user)
+                        user.hand.remove(card)
+                        self.text.append(
+                            f"打出 {card.name},   费用: {user.energy},     总伤: {user.total_damage},    护甲: {user.armor},     狂怒Buff: {user.buff}"
+                        )
+                        simulation_log.append(
+                            f"打出 {card.name},   费用: {user.energy},     总伤: {user.total_damage},    护甲: {user.armor},     狂怒Buff: {user.buff}"
+                        )
+                    except RuntimeError as e:
+                        self.text.append(f"无法打出 {card.name}: {e}")
+
+                simulation_results.append(
+                    {"total_damage": user.total_damage, "log": simulation_log}
+                )
+
+            # 找到 total-damage 最高的那一次
+            max_damage_result = max(simulation_results, key=lambda x: x["total_damage"])
+
+            # 输出最高 total-damage 的出牌过程
+            self.text.append(
+                "**************************************************************"
+            )
+            self.text.append(f"最高总伤害: {max_damage_result['total_damage']}")
+            self.text.append("出牌过程:")
+            for log_entry in max_damage_result["log"]:
+                self.text.append(log_entry)
+
         except ValueError:
             QMessageBox.warning(self, "错误", "请输入有效的数字")
-
-    def simulate(self, energy):
-        user = PC.User(energy=energy)
-        cards = [PC.CardDuPi(), PC.CardJianBing(), PC.CardQiYue(), PC.CardKuangNu()]
-        user.draw_pile = cards.copy()
-        random.shuffle(user.draw_pile)
-
-        for _ in range(4):
-            if user.draw_pile:
-                card = user.draw_pile.pop()
-                card.status = PC.CardStatus.IN_HAND
-                user.hand.append(card)
-
-        while user.energy > 0 or user.has_dupi():
-            if not user.hand:
-                break
-
-            hand_names = [card.name for card in user.hand]
-            discard_names = [card.name for card in user.discard_pile]
-            self.text.append(f"手牌中：{hand_names} ,    弃牌中：{discard_names}")
-
-            card = random.choice(user.hand)
-            try:
-                card.play(user)
-                user.hand.remove(card)
-                self.text.append(
-                    f"打出 {card.name},   费用: {user.energy},     总伤: {user.total_damage},    护甲: {user.armor},     狂怒Buff: {user.buff}"
-                )
-            except RuntimeError as e:
-                self.text.append(f"无法打出 {card.name}: {e}")
 
 
 # 页面B：手动出牌
